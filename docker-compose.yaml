@@ -1,0 +1,11 @@
+version: '3'
+services:
+  postgres:
+    container_name: db_date_example
+    image: postgres:9.6.11
+    volumes:
+      - ./init-postgres.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: datetime_example

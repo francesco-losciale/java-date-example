@@ -1,0 +1,42 @@
+buildscript {
+	dependencies {
+		classpath 'org.postgresql:postgresql:42.2.5'
+	}
+}
+
+plugins {
+	id 'org.springframework.boot' version '2.2.1.RELEASE'
+	id 'io.spring.dependency-management' version '1.0.8.RELEASE'
+	id 'org.flywaydb.flyway' version '5.2.4'
+	id 'io.franzbecker.gradle-lombok' version '3.1.0'
+	id 'java'
+}
+
+group = 'com.java.date.example'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '1.8'
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.flywaydb:flyway-core:5.2.4'
+	implementation 'org.postgresql:postgresql:42.2.5'
+
+	testImplementation('org.springframework.boot:spring-boot-starter-test') {
+		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+	}
+}
+
+flyway {
+	url = 'jdbc:postgresql://localhost:5432/postgres?currentSchema=datetime_example&useTimezone=true'
+	user = 'postgres'
+	password = 'datetime_example'
+}
+
+test {
+	useJUnitPlatform()
+}

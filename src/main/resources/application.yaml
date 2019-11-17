@@ -1,0 +1,9 @@
+spring:
+  datasource:
+    username: postgres
+    password: datetime_example
+    url: jdbc:postgresql://localhost:5432/postgres?currentSchema=datetime_example
+
+
+  jpa:
+    show-sql: true
