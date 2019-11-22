@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
 @Rollback(false)
-class JavaDateTime1_With_EuropeLondon_SessionDatabaseTimezone_Test {
+class JavaTimePackageTest {
 
     @Autowired
     private DateExampleRepository dateExampleRepository;
@@ -89,7 +89,7 @@ class JavaDateTime1_With_EuropeLondon_SessionDatabaseTimezone_Test {
     @Test
     void when_Reading_DateTime_From_Database_In_London_Then_Expect_Correct_Values() {
         final List<DateExample> dateExampleList = dateExampleRepository.findAll();
-        final DateExample dateExample = dateExampleList.get(dateExampleList.size()-1);
+        final DateExample dateExample = dateExampleList.get(dateExampleList.size() - 1);
 
         // converting from UTC to our ZoneTime the instant will be the same
         assertThat(dateExample.getTimestampWithZone()).isEqualTo("2019-12-27T10:00:00.000+00:00[Europe/London]");
@@ -104,9 +104,11 @@ class JavaDateTime1_With_EuropeLondon_SessionDatabaseTimezone_Test {
 
     @Test
     void when_Reading_DateTime_From_Database_In_Tokyo_Then_Expect_Correct_Values() {
+
         TimeZone.setDefault(TimeZone.getTimeZone(ZoneId.of("Asia/Tokyo")));
+
         final List<DateExample> dateExampleList = dateExampleRepository.findAll();
-        final DateExample dateExample = dateExampleList.get(dateExampleList.size()-1);
+        final DateExample dateExample = dateExampleList.get(dateExampleList.size() - 1);
 
         // converting from the UTC value in the table to our ZoneTime the instant will be the same
         assertThat(dateExample.getTimestampWithZone()).isEqualTo("2019-12-27T19:00:00.000+08:00[Asia/Tokyo]");
@@ -119,15 +121,17 @@ class JavaDateTime1_With_EuropeLondon_SessionDatabaseTimezone_Test {
 
     @Test
     void when_Reading_DateTime_From_Database_In_Paris_Then_Expect_Correct_Values() {
+
         TimeZone.setDefault(TimeZone.getTimeZone(ZoneId.of("Europe/Paris")));
+
         final List<DateExample> dateExampleList = dateExampleRepository.findAll();
-        final DateExample dateExample = dateExampleList.get(dateExampleList.size()-1);
+        final DateExample dateExample = dateExampleList.get(dateExampleList.size() - 1);
 
         // converting from the UTC value in the table to our ZoneTime the instant will be the same
         assertThat(dateExample.getTimestampWithZone()).isEqualTo("2019-12-27T11:00:00.000+01:00[Europe/Paris]");
         assertThat(dateExample.getTimestampWithUtcOffset()).isEqualTo("2019-12-27T11:00:00.000+01:00");
 
-        // Reading Without Zone datetime is accidentally safe because it has been written in Paris
+        // Reading Without Zone datetime is accidentally safe because it has been written in the Paris zone
         assertThat(dateExample.getTimestampWithoutZone()).isEqualTo("2019-12-27T11:00:00.000");
     }
 
