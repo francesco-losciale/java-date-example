@@ -8,11 +8,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.Rollback;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -25,7 +23,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
-@TestPropertySource(properties = {"spring.jpa.properties.hibernate.jdbc.time_zone = Europe/London"})
 @Rollback(false)
 class JavaDateTime1_With_EuropeLondon_SessionDatabaseTimezone_Test {
 
@@ -37,54 +34,72 @@ class JavaDateTime1_With_EuropeLondon_SessionDatabaseTimezone_Test {
     // During the Daylight Saving Time (31 March to 27 October in UK)
     // The UTC offset from Paris is +02:00 hours instead of only one
 
-    final ZonedDateTime parisZoned = ZonedDateTime.parse("2019-12-27T11:39:34.326+00:00[Europe/Paris]");
-    final OffsetDateTime parisUtc = parisZoned.toOffsetDateTime();
-    final LocalDateTime parisLocal = parisZoned.toLocalDateTime();
-    final ZonedDateTime londonZonedSameParisInstant = parisZoned.withZoneSameInstant(ZoneId.of("Europe/London"));
+    final ZonedDateTime parisZoned = ZonedDateTime.parse("2019-12-27T11:00:00.000+01:00[Europe/Paris]");
+    final ZonedDateTime londonZoned = ZonedDateTime.parse("2019-12-27T10:00:00.000+00:00[Europe/London]");
 
     private static DateExample dateExample = null;
 
     @BeforeEach
     void setUp() {
+        TimeZone.setDefault(TimeZone.getTimeZone(ZoneId.of("Europe/London")));
         if (dateExample == null) {
             dateExample = new DateExample();
-            dateExample.setTimestampWithoutZone(parisLocal);
+            dateExample.setTimestampWithoutZone(parisZoned.toLocalDateTime());
             dateExample.setTimestampWithZone(parisZoned);
-            dateExample.setTimestampWithUtcOffset(parisUtc);
+            dateExample.setTimestampWithUtcOffset(parisZoned.toOffsetDateTime());
             dateExampleRepository.saveAndFlush(dateExample);
+            // The timestamp with time zone is a zone-aware date and time data type.
+            // PostgreSQL stores the timestamp in UTC value.
+            // When you insert a value into the column, PostgreSQL converts the timestamp
+            // into a UTC value and stores the UTC value in the table.
+            // When you query from the database, PostgreSQL converts the UTC value back
+            // to the time value of the timezone set by the database server, the user, or the current
+            // database connection.
         }
     }
 
-    @Test
-    void when_Converting_EuropeParis_To_Utc_Then_Offset_is_Two_Hours() {
-        assertThat(parisUtc).isEqualTo(OffsetDateTime.parse("2019-12-27T11:39:34.326+01:00"));
-        assertThat(parisUtc.getOffset()).isEqualTo(ZoneOffset.ofHours(1));
+    @AfterEach
+    void tearDown() {
+        TimeZone.setDefault(TimeZone.getTimeZone(ZoneId.of("Europe/London")));
     }
 
     @Test
-    void when_Converting_EuropeParis_To_Local_EuropeLondon_Then_Offset_Is_Ignored() {
-        assertThat(parisLocal).isEqualTo(LocalDateTime.parse("2019-12-27T11:39:34.326"));
+    void when_EuropeParisZoned_Is_Compared_EuropeLondonZoned_Then_Equals() {
+        assertThat(parisZoned).isEqualTo(londonZoned);
     }
 
     @Test
-    void when_Converting_EuropeParis_To_Zoned_EuropeLondon_Then_One_Hour_Earlier() {
-        assertThat(londonZonedSameParisInstant.toOffsetDateTime()).isEqualTo(OffsetDateTime.parse("2019-12-27T10:39:34.326Z"));
-        assertThat(londonZonedSameParisInstant.toOffsetDateTime().getOffset()).isEqualTo(ZoneOffset.ofHours(0));
+    void when_EuropeParisZoned_Is_Converted_to_EuropeLondonZoned_Then_Correct_Value() {
+        ZonedDateTime converted = parisZoned.withZoneSameInstant(ZoneId.of("Europe/London"));
+        assertThat(converted).isEqualTo(londonZoned);
+        assertThat(converted.getOffset().getTotalSeconds()).isEqualTo(0);
+    }
+
+    @Test
+    void when_Converting_EuropeParis_To_Utc_Then_Offset_is_One_Hour() {
+        assertThat(parisZoned.toOffsetDateTime()).isEqualTo(OffsetDateTime.parse("2019-12-27T11:00:00.000+01:00"));
+        assertThat(parisZoned.toOffsetDateTime().getOffset()).isEqualTo(ZoneOffset.ofHours(1));
+    }
+
+    @Test
+    void when_Converting_Zoned_EuropeParis_To_Local_EuropeParis_Then_Offset_And_Zone_Ignored() {
+        assertThat(parisZoned.toLocalDateTime()).isEqualTo(LocalDateTime.parse("2019-12-27T11:00:00.000"));
     }
 
     @Test
     void when_Reading_DateTime_From_Database_In_London_Then_Expect_Correct_Values() {
-        TimeZone.setDefault(TimeZone.getTimeZone(ZoneId.of("Europe/London")));
         final List<DateExample> dateExampleList = dateExampleRepository.findAll();
         final DateExample dateExample = dateExampleList.get(dateExampleList.size()-1);
 
         // converting from UTC to our ZoneTime the instant will be the same
-        assertThat(dateExample.getTimestampWithZone()).isEqualTo("2019-12-27T10:39:34.326Z[Europe/London]");
-        assertThat(dateExample.getTimestampWithUtcOffset()).isEqualTo("2019-12-27T10:39:34.326Z");
+        assertThat(dateExample.getTimestampWithZone()).isEqualTo("2019-12-27T10:00:00.000+00:00[Europe/London]");
+        assertThat(dateExample.getTimestampWithZone()).isEqualTo("2019-12-27T11:00:00.000+01:00[Europe/Paris]");
+        assertThat(dateExample.getTimestampWithUtcOffset()).isEqualTo("2019-12-27T11:00:00.000+01:00");
 
-        // Reading Without Zone datetime we can see the instant is not the correct one
-        assertThat(dateExample.getTimestampWithoutZone()).isNotEqualTo("2019-12-27T10:39:34.326");
-        assertThat(dateExample.getTimestampWithoutZone()).isEqualTo("2019-12-27T11:39:34.326");
+        // What we saved as LocalDateTime (in a column WITHOUT TIME ZONE) has ignored the offset/zone
+        // The instant in our local Europe/London Timezone is wrong and one hour ahead.
+        assertThat(dateExample.getTimestampWithoutZone()).isNotEqualTo("2019-12-27T10:00:00.000");
+        assertThat(dateExample.getTimestampWithoutZone()).isEqualTo("2019-12-27T11:00:00.000");
     }
 
     @Test
@@ -93,13 +108,13 @@ class JavaDateTime1_With_EuropeLondon_SessionDatabaseTimezone_Test {
         final List<DateExample> dateExampleList = dateExampleRepository.findAll();
         final DateExample dateExample = dateExampleList.get(dateExampleList.size()-1);
 
-        // converting from UTC to our ZoneTime the instant will be the same
-        assertThat(dateExample.getTimestampWithZone()).isEqualTo("2019-12-27T18:39:34.326+00:00[Asia/Tokyo]");
-        assertThat(dateExample.getTimestampWithUtcOffset()).isEqualTo("2019-12-27T18:39:34.326+09:00");
+        // converting from the UTC value in the table to our ZoneTime the instant will be the same
+        assertThat(dateExample.getTimestampWithZone()).isEqualTo("2019-12-27T19:00:00.000+08:00[Asia/Tokyo]");
+        assertThat(dateExample.getTimestampWithUtcOffset()).isEqualTo("2019-12-27T19:00:00.000+09:00");
 
         // Reading Without Zone datetime we can see the instant is not the correct one
-        assertThat(dateExample.getTimestampWithoutZone()).isNotEqualTo("2019-12-27T18:39:34.326");
-        assertThat(dateExample.getTimestampWithoutZone()).isEqualTo("2019-12-27T11:39:34.326");
+        assertThat(dateExample.getTimestampWithoutZone()).isNotEqualTo("2019-12-27T18:00:00.000");
+        assertThat(dateExample.getTimestampWithoutZone()).isEqualTo("2019-12-27T11:00:00.000");
     }
 
     @Test
@@ -108,12 +123,12 @@ class JavaDateTime1_With_EuropeLondon_SessionDatabaseTimezone_Test {
         final List<DateExample> dateExampleList = dateExampleRepository.findAll();
         final DateExample dateExample = dateExampleList.get(dateExampleList.size()-1);
 
-        // converting from UTC to our ZoneTime the instant will be the same
-        assertThat(dateExample.getTimestampWithZone()).isEqualTo("2019-12-27T11:39:34.326+00:00[Europe/Paris]");
-        assertThat(dateExample.getTimestampWithUtcOffset()).isEqualTo("2019-12-27T11:39:34.326+01:00");
+        // converting from the UTC value in the table to our ZoneTime the instant will be the same
+        assertThat(dateExample.getTimestampWithZone()).isEqualTo("2019-12-27T11:00:00.000+01:00[Europe/Paris]");
+        assertThat(dateExample.getTimestampWithUtcOffset()).isEqualTo("2019-12-27T11:00:00.000+01:00");
 
         // Reading Without Zone datetime is accidentally safe because it has been written in Paris
-        assertThat(dateExample.getTimestampWithoutZone()).isEqualTo("2019-12-27T11:39:34.326");
+        assertThat(dateExample.getTimestampWithoutZone()).isEqualTo("2019-12-27T11:00:00.000");
     }
 
 }
