@@ -92,6 +92,23 @@ class JavaTimePackageTest {
     }
 
     @Test
+    void when_Converting_Local_EuropeParis_To_UTC_Then_Value_Is_Correct() {
+        LocalDateTime londonDateTime = LocalDateTime.parse("2019-12-27T11:00:00.000");
+        OffsetDateTime utcDateTime = ZonedDateTime.of(londonDateTime, ZoneId.of("Europe/Paris"))
+                .toOffsetDateTime();
+        assertThat(utcDateTime).isEqualTo(parisZoned.toOffsetDateTime());
+    }
+
+    @Test
+    void when_Converting_Utc_To_EuropeLondon_Then_Value_Is_Correct() {
+        OffsetDateTime utcDateTime = OffsetDateTime.parse("2019-12-27T10:00:00.000Z");
+        LocalDateTime parisDateTime = utcDateTime
+                .atZoneSameInstant(ZoneId.of("Europe/Paris"))
+                .toLocalDateTime();
+        assertThat(parisDateTime).isEqualTo(LocalDateTime.parse("2019-12-27T11:00:00.000"));
+    }
+
+    @Test
     void when_Reading_DateTime_From_Database_In_London_Then_Expect_Correct_Values() {
         final List<DateExample> dateExampleList = dateExampleRepository.findAll();
         final DateExample dateExample = dateExampleList.get(dateExampleList.size() - 1);
