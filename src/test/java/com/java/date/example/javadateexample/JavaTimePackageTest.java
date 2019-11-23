@@ -29,7 +29,7 @@ class JavaTimePackageTest {
     @Autowired
     private DateExampleRepository dateExampleRepository;
 
-    // Edge case: The time distance between Paris and UTC/GMT/London is 1 hour.
+    // Time distance between Paris and UTC/GMT/London is 1 hour.
     // Be careful when you see values saved in a table WITH ZONE
     // During the Daylight Saving Time (31 March to 27 October in UK)
     // The UTC offset from Paris is +02:00 hours instead of only one
@@ -84,6 +84,11 @@ class JavaTimePackageTest {
     @Test
     void when_Converting_Zoned_EuropeParis_To_Local_EuropeParis_Then_Offset_And_Zone_Ignored() {
         assertThat(parisZoned.toLocalDateTime()).isEqualTo(LocalDateTime.parse("2019-12-27T11:00:00.000"));
+    }
+
+    @Test
+    void when_Converting_Utc_EuropeParis_To_Local_EuropeParis_Then_Offset_Ignored() {
+        assertThat(parisZoned.toOffsetDateTime().toLocalDateTime()).isEqualTo(LocalDateTime.parse("2019-12-27T11:00:00.000"));
     }
 
     @Test
