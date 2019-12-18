@@ -132,17 +132,6 @@ class JavaTimePackageTest {
         assertThat(localDateTime).isEqualTo(convertToLondonLocalDateTime(utcDateTime));
     }
 
-    private OffsetDateTime convertToUtcDateTime(LocalDateTime localDateTime) {
-        return ZonedDateTime.of(localDateTime, ZoneId.of("Europe/London"))
-                .toOffsetDateTime()
-                .withOffsetSameInstant(ZoneOffset.UTC);
-    }
-
-    private LocalDateTime convertToLondonLocalDateTime(OffsetDateTime utcDateTime) {
-        return utcDateTime.atZoneSameInstant(ZoneId.of("Europe/London"))
-                                                .toLocalDateTime();
-    }
-
     @Test
     void when_Reading_DateTime_From_Database_In_London_Then_Expect_Correct_Values() {
         final List<DateExample> dateExampleList = dateExampleRepository.findAll();
@@ -192,4 +181,14 @@ class JavaTimePackageTest {
         assertThat(dateExample.getTimestampWithoutZone()).isEqualTo("2019-12-27T11:00:00.000");
     }
 
+    private OffsetDateTime convertToUtcDateTime(LocalDateTime localDateTime) {
+        return ZonedDateTime.of(localDateTime, ZoneId.of("Europe/London"))
+                .toOffsetDateTime()
+                .withOffsetSameInstant(ZoneOffset.UTC);
+    }
+
+    private LocalDateTime convertToLondonLocalDateTime(OffsetDateTime utcDateTime) {
+        return utcDateTime.atZoneSameInstant(ZoneId.of("Europe/London"))
+                .toLocalDateTime();
+    }
 }
