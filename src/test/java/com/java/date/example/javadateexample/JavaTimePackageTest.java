@@ -109,6 +109,29 @@ class JavaTimePackageTest {
     }
 
     @Test
+    void when_Doing_Date_Calculation_Using_Utc_Dates_Then_Result_Is_Not_Different_From_Doing_Them_With_Local_DateTime() {
+        OffsetDateTime utcDateTime = OffsetDateTime.parse("2019-12-27T10:00:00.000Z");
+        LocalDateTime localDateTime = convertToLondonLocalDateTime(utcDateTime);
+
+        utcDateTime = utcDateTime.plusDays(1).plusHours(2).plusMinutes(6);
+        localDateTime = localDateTime.plusDays(1).plusHours(2).plusMinutes(6);
+
+        assertThat(utcDateTime).isEqualTo(convertToUtcDateTime(localDateTime));
+        assertThat(localDateTime).isEqualTo(convertToLondonLocalDateTime(utcDateTime));
+    }
+
+    private OffsetDateTime convertToUtcDateTime(LocalDateTime localDateTime) {
+        return ZonedDateTime.of(localDateTime, ZoneId.of("Europe/London"))
+                .toOffsetDateTime()
+                .withOffsetSameInstant(ZoneOffset.UTC);
+    }
+
+    private LocalDateTime convertToLondonLocalDateTime(OffsetDateTime utcDateTime) {
+        return utcDateTime.atZoneSameInstant(ZoneId.of("Europe/London"))
+                                                .toLocalDateTime();
+    }
+
+    @Test
     void when_Reading_DateTime_From_Database_In_London_Then_Expect_Correct_Values() {
         final List<DateExample> dateExampleList = dateExampleRepository.findAll();
         final DateExample dateExample = dateExampleList.get(dateExampleList.size() - 1);
