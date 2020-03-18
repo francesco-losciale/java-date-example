@@ -29,7 +29,7 @@ format which can always be converted back to a local datetime of a specific time
  
    In June the UTC offset from Paris is +02:00 hours instead of +01:00
 
-* If you convert a LocalDateTime such as 2020-03-31T00:00:00.000 to UTC OffsetDateTime, the new value becomes 2020-03-30T23:00:00.000, ie. the day before.
+* If you convert a LocalDateTime such as 2020-03-31T00:00:00.000 to UTC OffsetDateTime, the new value becomes 2020-03-30T23:00:00.000, ie. the day before!!! Be careful with date value manipulation then! You should first convert UTC to BST to be sure you are not getting things wrong.
 
 
 * Use timestamp WITH ZONE in the table column so that even the local datetime values without explicit zone are 
