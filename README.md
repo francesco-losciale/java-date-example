@@ -17,6 +17,8 @@ Build and test:
 
 ### Best practices
 
+* When you need to generate a date with `now` and `OffsetDateTime`, please use `OffsetDateTime.now(UTC)` which will generate the date in UTC format without +01:00 offset DST. If you use `OffsetDateTime.now()` you could mess things up when manipulating values. 
+
 * When sending datetime values over network or saving them in database tables, be sure to save the values in UTC 
 format which can always be converted back to a local datetime of a specific timezone. 
 
